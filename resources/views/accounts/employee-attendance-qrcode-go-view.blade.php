@@ -1,0 +1,120 @@
+@extends('layout.structure')
+
+@section('content')
+    <div class="col-lg-12 col-sm-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex justify-content-between flex-row-reverse">
+                <h6 class="m-0 font-weight-bold text-primary">عملہ کے جانے کی حاضری بذریعہ کیو آر کوڈ</h6>
+                <div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-center">
+                    <div style="width: 500px" id="reader"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+
+@section('script')
+    <script>
+        function refreshTableAfterAdmissionYearLoad() {
+
+            //this function is only define because its code in footer and error is occured due to not defined
+
+        }
+
+
+
+        var html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", {
+                fps: 100,
+                qrbox: 250
+            });
+
+
+        var sentStudents = [];
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Handle on success condition with the decoded text or result.
+            // console.log(`Scan result: ${decodedText}`, decodedResult);
+
+            var dataForAttendance = [];
+
+            var result = decodedText;
+           
+
+
+            var date_get_for_time = new Date(); // Current date and time
+
+            var options = {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                fractionalSecondDigits: 3,
+            };
+
+            var formattedTime = new Intl.DateTimeFormat('en-US', options).format(date_get_for_time);
+
+            var year = date_get_for_time.getFullYear();
+            var month = (date_get_for_time.getMonth() + 1).toString().padStart(2,
+            '0'); // Adding 1 because months are zero-based
+            var day = date_get_for_time.getDate().toString().padStart(2, '0');
+
+            var formattedDate = `${year}-${month}-${day}`;
+
+            var employee_id = result;
+
+            dataForAttendance.push({
+                employee_id: employee_id,
+                date: formattedDate,
+                time_out: formattedTime
+            })
+
+
+            const insert_update_attendance = {
+                insert_attendance: dataForAttendance,
+            }
+
+
+            var index = sentStudents.indexOf(employee_id);
+
+            if (index == -1){
+                sentStudents.push(employee_id);
+            }else{
+               return false;
+            }
+
+            
+            $.ajax({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                type: 'POST',
+                url: "{{ url('employee-attendance-qrcode-time-to-go-insert') }}",
+                data: JSON.stringify(insert_update_attendance),
+                contentType: 'application/json',
+                success: function(response) {
+
+                    successAlert();
+                    current_value = response;
+                },
+                error: function(error) {
+
+                    errorAlert();
+                   
+
+
+                }
+            });
+
+        }
+
+
+
+        html5QrcodeScanner.render(onScanSuccess);
+
+    </script>
+@endsection
